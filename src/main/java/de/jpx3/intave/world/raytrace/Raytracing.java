@@ -153,49 +153,71 @@ public final class Raytracing {
     EntityRaytraceBlockConstraint rayTraceBlocks
   ) {
     Timings.SERVICE_RAYTRACER_ENTITY.start();
-    NativeVector eyeVector = positionEyes(player, prevPosX, prevPosY, prevPosZ);
     double blockReachDistance = 6;
     double attackReachDistance = reachDistanceOf(player);
     double lastReach = 10;
     NativeVector lastHitVec = null;
-    for (boolean fastMath : PESSIMISTIC_BOOLEAN_ORDER) {
-      if (lastReach < attackReachDistance)
-        break;
-      NativeVector interpolatedLookVec = wrappedVectorForRotation(pitch, prevYaw, fastMath);
-      NativeVector lookVector = eyeVector.addVector(
-        interpolatedLookVec.xCoord * blockReachDistance,
-        interpolatedLookVec.yCoord * blockReachDistance,
-        interpolatedLookVec.zCoord * blockReachDistance
-      );
-      BoundingBox hitBox = entityBoundingBox.grow(boundingBoxExpansion, boundingBoxExpansion, boundingBoxExpansion);
-      if (alternativeYDifference != 0) {
-        hitBox = hitBox.addJustMaxY(alternativeYDifference);
+    NativeVector lastEyeVector = null;
+
+    User user = UserRepository.userOf(player);
+    Pose assumedPose = user.meta().movement().pose();
+    boolean sneakUncertainty = user.meta().protocol().delayedSneak() &&
+      user.meta().movement().ticksSinceLastSneak <= 1 &&
+      assumedPose == Pose.STANDING;
+
+    for (int i = 0; i < 2; i++) {
+      Pose selectedPose;
+      if (i == 0) {
+        selectedPose = assumedPose;
+      } else if (sneakUncertainty && lastReach >= attackReachDistance) {
+        selectedPose = Pose.CROUCHING;
+      } else {
+        continue;
       }
-      MovingObjectPosition movingObjectPosition = hitBox.calculateIntercept(eyeVector, lookVector);
-      if (hitBox.isVecInside(eyeVector)) {
-        lastReach = 0;
-        lastHitVec = null;
-      } else if (movingObjectPosition != null) {
-        double distanceToEntity = eyeVector.distanceTo(movingObjectPosition.hitVec);
-        double reach;
-        boolean blockRaytrace = false;
-        if (rayTraceBlocks == EntityRaytraceBlockConstraint.ACCEPT_BLOCKS) {
-          MovingObjectPosition blockMovingPosition = Raytracing.blockRayTrace(player.getWorld(), player, eyeVector, lookVector);
-          double distanceToBlock = blockMovingPosition == null || blockMovingPosition.hitVec == null ? 10 : eyeVector.distanceTo(blockMovingPosition.hitVec);
-          reach = distanceToBlock < distanceToEntity ? 10 : distanceToEntity;
-          blockRaytrace = true;
-        } else {
-          reach = distanceToEntity;
+
+      NativeVector eyeVector = positionEyes(player, selectedPose, prevPosX, prevPosY, prevPosZ);
+
+      for (boolean fastMath : PESSIMISTIC_BOOLEAN_ORDER) {
+        if (lastReach < attackReachDistance)
+          break;
+        NativeVector interpolatedLookVec = wrappedVectorForRotation(pitch, prevYaw, fastMath);
+        NativeVector lookVector = eyeVector.addVector(
+          interpolatedLookVec.xCoord * blockReachDistance,
+          interpolatedLookVec.yCoord * blockReachDistance,
+          interpolatedLookVec.zCoord * blockReachDistance
+        );
+        BoundingBox hitBox = entityBoundingBox.grow(boundingBoxExpansion, boundingBoxExpansion, boundingBoxExpansion);
+        if (alternativeYDifference != 0) {
+          hitBox = hitBox.addJustMaxY(alternativeYDifference);
         }
-        if (reach < lastReach && (reach < attackReachDistance || blockRaytrace)) {
-          lastReach = reach;
-          lastHitVec = movingObjectPosition.hitVec;
+        MovingObjectPosition movingObjectPosition = hitBox.calculateIntercept(eyeVector, lookVector);
+        if (hitBox.isVecInside(eyeVector)) {
+          lastReach = 0;
+          lastHitVec = null;
+          lastEyeVector = null;
+        } else if (movingObjectPosition != null) {
+          double distanceToEntity = eyeVector.distanceTo(movingObjectPosition.hitVec);
+          double reach;
+          boolean blockRaytrace = false;
+          if (rayTraceBlocks == EntityRaytraceBlockConstraint.ACCEPT_BLOCKS) {
+            MovingObjectPosition blockMovingPosition = Raytracing.blockRayTrace(player.getWorld(), player, eyeVector, lookVector);
+            double distanceToBlock = blockMovingPosition == null || blockMovingPosition.hitVec == null ? 10 : eyeVector.distanceTo(blockMovingPosition.hitVec);
+            reach = distanceToBlock < distanceToEntity ? 10 : distanceToEntity;
+            blockRaytrace = true;
+          } else {
+            reach = distanceToEntity;
+          }
+          if (reach < lastReach && (reach < attackReachDistance || blockRaytrace)) {
+            lastReach = reach;
+            lastEyeVector = eyeVector;
+            lastHitVec = movingObjectPosition.hitVec;
+          }
         }
       }
     }
 
     Timings.SERVICE_RAYTRACER_ENTITY.stop();
-    return Raytrace.ofNative(eyeVector, lastHitVec, lastReach);
+    return Raytrace.ofNative(lastEyeVector, lastHitVec, lastReach);
   }
 
   private static NativeVector wrappedVectorForRotation(float pitch, float prevYaw, boolean fastMath) {
@@ -206,8 +228,8 @@ public final class Raytracing {
     return new NativeVector(var4 * var5, var6, var3 * var5);
   }
 
-  private static NativeVector positionEyes(Player player, double prevPosX, double prevPosY, double prevPosZ) {
-    return new NativeVector(prevPosX, prevPosY + resolvePlayerEyeHeight(player), prevPosZ);
+  private static NativeVector positionEyes(Player player, Pose pose, double prevPosX, double prevPosY, double prevPosZ) {
+    return new NativeVector(prevPosX, prevPosY + resolvePlayerEyeHeight(player, pose), prevPosZ);
   }
 
   public static MovingObjectPosition blockShrinkRayTrace(Player player, Location playerLocation, double shrik) {
@@ -331,7 +353,8 @@ public final class Raytracing {
 
   public static double resolvePlayerEyeHeight(Player player) {
     User user = UserRepository.userOf(player);
-    return user.meta().movement().eyeHeight();
+    float eyeHeight = user.meta().movement().eyeHeight();
+    return eyeHeight;
   }
 
   public static double resolvePlayerEyeHeight(Player player, Pose pose) {

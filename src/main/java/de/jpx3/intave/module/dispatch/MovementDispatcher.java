@@ -824,12 +824,14 @@ public final class MovementDispatcher extends Module {
       movement.lastJump = System.currentTimeMillis();
     }
     if (movement.isSneaking()) {
+      movement.ticksSinceLastSneak = 0;
       movement.ticksSneaking++;
       if (movement.ticksSneaking > 1) {
         movement.lastSneakingTimestamps = System.currentTimeMillis();
       }
     } else {
       movement.ticksSneaking = 0;
+      movement.ticksSinceLastSneak++;
     }
     if (movement.isSprinting()) {
       movement.ticksSprinting++;
@@ -1317,7 +1319,7 @@ public final class MovementDispatcher extends Module {
       case START_SPRINTING:
         if (allowSprinting(user)) {
           movementData.setSprinting(true);
-          if (IntaveControl.DEBUG_PLAYER_ACTIONS) {
+          if (IntaveControl.DEBUG_PLAYER_ACTIONS || user.receives(MessageChannel.DEBUG_PLAYER_ACTIONS)) {
             user.player().sendMessage(ChatColor.WHITE + "Start sprinting " + meta.attack().attackPastTicks);
           }
         }
@@ -1325,7 +1327,7 @@ public final class MovementDispatcher extends Module {
       case STOP_SPRINTING:
         int ticksSprinting = movementData.ticksSprinting;
         movementData.setSprinting(false);
-        if (IntaveControl.DEBUG_PLAYER_ACTIONS) {
+        if (IntaveControl.DEBUG_PLAYER_ACTIONS || user.receives(MessageChannel.DEBUG_PLAYER_ACTIONS)) {
           user.player().sendMessage(ChatColor.BLACK + "Stop sprinting after " + ticksSprinting + " " + meta.attack().attackPastTicks);
         }
         break;
@@ -1384,6 +1386,7 @@ public final class MovementDispatcher extends Module {
     if (System.currentTimeMillis() - punishmentData.timeLastSneakToggleCancel < 2000) {
       cancelable.setCancelled(true);
     }
+    movementData.ticksSinceLastSneak = 0;
     movementData.pastVehicleExitTicks = 0;
     if (movementData.isInVehicle()) {
       movementData.dismountRidingEntity("Sneak exit");
@@ -1391,7 +1394,7 @@ public final class MovementDispatcher extends Module {
     } else {
       movementData.sneaking = true;
     }
-    if (IntaveControl.DEBUG_PLAYER_ACTIONS) {
+    if (IntaveControl.DEBUG_PLAYER_ACTIONS || user.receives(MessageChannel.DEBUG_PLAYER_ACTIONS)) {
       user.player().sendMessage(ChatColor.GREEN + "Start sneaking " + movementData.sneaking);
     }
   }
@@ -1399,7 +1402,7 @@ public final class MovementDispatcher extends Module {
   private void stopSneak(User user) {
     MovementMetadata movementData = user.meta().movement();
     movementData.sneaking = false;
-    if (IntaveControl.DEBUG_PLAYER_ACTIONS) {
+    if (IntaveControl.DEBUG_PLAYER_ACTIONS || user.receives(MessageChannel.DEBUG_PLAYER_ACTIONS)) {
       user.player().sendMessage(ChatColor.RED + "Stop sneaking after " + movementData.ticksSneaking);
     }
   }

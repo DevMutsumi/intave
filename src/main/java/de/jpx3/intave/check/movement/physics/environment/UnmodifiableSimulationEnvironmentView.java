@@ -372,13 +372,13 @@ public final class UnmodifiableSimulationEnvironmentView implements SimulationEn
 	}
 
 	@Override
-	public void setPreMoveColliderResult(ColliderResult result) {
+	public void setBeforeMoveColliderResult(ColliderResult result) {
 		throw new UnsupportedOperationException("Cannot modify unmodifiable view");
 	}
 
 	@Override
-	public ColliderResult preMoveColliderResult() {
-		return delegate.preMoveColliderResult();
+	public ColliderResult beforeMoveColliderResult() {
+		return delegate.beforeMoveColliderResult();
 	}
 
 	@Override

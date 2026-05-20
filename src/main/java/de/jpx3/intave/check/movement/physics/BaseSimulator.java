@@ -19,15 +19,14 @@ import de.jpx3.intave.player.Enchantments;
 import de.jpx3.intave.player.collider.Colliders;
 import de.jpx3.intave.player.collider.complex.ColliderResult;
 import de.jpx3.intave.player.collider.simple.SimpleColliderResult;
-import de.jpx3.intave.share.BoundingBox;
-import de.jpx3.intave.share.ClientMath;
-import de.jpx3.intave.share.Motion;
-import de.jpx3.intave.share.Position;
+import de.jpx3.intave.share.*;
 import de.jpx3.intave.user.User;
 import de.jpx3.intave.user.meta.MetadataBundle;
 import de.jpx3.intave.user.meta.MovementMetadata;
 import de.jpx3.intave.user.meta.ProtocolMetadata;
 import de.jpx3.intave.user.meta.ViolationMetadata;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -551,9 +550,9 @@ class BaseSimulator extends Simulator {
 
     // onLanded
     if (environment.collidedVertically()) {
-      Motion collisionVector =
-        BlockPhysics.blockLanded(
-          user, block, motion.motionX, environment.baseMotionY(), motion.motionZ);
+      Motion collisionVector = BlockPhysics.blockLanded(
+        user, block, motion.motionX, environment.baseMotionY(), motion.motionZ
+      );
       if (collisionVector != null) {
         motion.setTo(collisionVector);
       } else {
@@ -566,7 +565,7 @@ class BaseSimulator extends Simulator {
     // EntityCollidedWithBlock
     if (environment.onGround() && !environment.isSneaking()) {
       Motion collisionVector =
-        BlockPhysics.entityInside(user, block, motion.motionX, motion.motionY, motion.motionZ);
+        BlockPhysics.stepOn(user, block, motion.motionX, motion.motionY, motion.motionZ);
       if (collisionVector != null) {
         motion.setTo(collisionVector);
       }
@@ -619,7 +618,46 @@ class BaseSimulator extends Simulator {
   ) {
     Position from = environment.verifiedPosition();
     Position to = environment.position();
+    Motion move = from.motionTo(to);
 
+    ColliderResult colliderResult = environment.beforeMoveColliderResult();
+    if (colliderResult == null) {
+      return;
+    }
+
+    Motion crazyMotion = colliderResult.intermittentResult();
+
+    LongSet visitedBlocks = new LongOpenHashSet();
+
+		int i = 16;
+    if (crazyMotion != null && move.lengthSquared() > 0.0) {
+      for (Direction.Axis axis : Direction.axisStepOrder(crazyMotion)) {
+        double motionPartial = crazyMotion.partialMotionIn(axis);
+        if (motionPartial != 0.0) {
+	        Position positionPartial = from.relative(axis.positive(), motionPartial);
+	        i -= checkInsideBlocks(user, environment, from, positionPartial, visitedBlocks, i);
+					from = positionPartial;
+        }
+      }
+    } else {
+			i -= checkInsideBlocks(user, environment, from, to, visitedBlocks, i);
+    }
+		if (i <= 0) {
+			checkInsideBlocks(user, environment, from, to, visitedBlocks, 1);
+		}
+  }
+
+  private int checkInsideBlocks(
+    User user,
+		SimulationEnvironment environment,
+    Position from, Position to,
+    LongSet visitedBlocks,
+    int limit
+  ) {
+	  BoundingBox box = BoundingBox.fromPosition(user, environment, to).shrink(0.00001f);
+		boolean furtherThanOneBlock = from.distanceSquared(to) > (0.9999900000002526 * 0.9999900000002526);
+
+    return 0;
   }
 
   private void simulateWaterAfter(

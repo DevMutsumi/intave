@@ -76,6 +76,32 @@ public final class Position extends Vector implements Serializable {
     return Math.sqrt(deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ);
   }
 
+	public double distanceSquared(Position position) {
+		return distanceSquared(position.x, position.y, position.z);
+	}
+
+	public double distanceSquared(Location location) {
+		return distanceSquared(location.getX(), location.getY(), location.getZ());
+	}
+
+	public double distanceSquared(double x, double y, double z) {
+		double deltaX = this.x - x;
+		double deltaY = this.y - y;
+		double deltaZ = this.z - z;
+		return deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ;
+	}
+
+	public Motion motionTo(Position to) {
+		return new Motion(to.x - x, to.y - y, to.z - z);
+	}
+
+	public Position relative(
+		Direction direction, double length
+	) {
+		Vector normal = direction.normalVec();
+		return new Position(x + normal.getX() * length, y + normal.getY() * length, z + normal.getZ() * length);
+	}
+
   public Position add(double x, double y, double z) {
     return new Position(this.x + x, this.y + y, this.z + z);
   }
@@ -83,6 +109,24 @@ public final class Position extends Vector implements Serializable {
   public Position add(Vector vector) {
     return add(vector.getX(), vector.getY(), vector.getZ());
   }
+
+	public NativeVector toNativeVec() {
+		return new NativeVector(x, y, z);
+	}
+
+	public Rotation rotationTo(Position otherPoint) {
+		float yaw = (float) Math.toDegrees(Math.atan2(otherPoint.z - z, otherPoint.x - x) - 90f);
+		float pitch = -(float) Math.toDegrees(Math.atan2(otherPoint.y - y, Math.sqrt(Math.pow(otherPoint.x - x, 2) + Math.pow(otherPoint.z - z, 2))));
+		return new Rotation(yaw, pitch);
+	}
+
+	public int chunkX() {
+		return floor(x) >> 4;
+	}
+
+	public int chunkZ() {
+		return floor(z) >> 4;
+	}
 
   @Override
   public String toString() {
@@ -100,23 +144,5 @@ public final class Position extends Vector implements Serializable {
 
   public static Position empty() {
     return new Position();
-  }
-
-  public NativeVector toNativeVec() {
-    return new NativeVector(x, y, z);
-  }
-
-  public Rotation rotationTo(Position otherPoint) {
-    float yaw = (float) Math.toDegrees(Math.atan2(otherPoint.z - z, otherPoint.x - x) - 90f);
-    float pitch = -(float) Math.toDegrees(Math.atan2(otherPoint.y - y, Math.sqrt(Math.pow(otherPoint.x - x, 2) + Math.pow(otherPoint.z - z, 2))));
-    return new Rotation(yaw, pitch);
-  }
-
-  public int chunkX() {
-    return floor(x) >> 4;
-  }
-
-  public int chunkZ() {
-    return floor(z) >> 4;
   }
 }

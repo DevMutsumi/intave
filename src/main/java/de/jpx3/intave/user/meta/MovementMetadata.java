@@ -95,6 +95,7 @@ public final class MovementMetadata implements SimulationEnvironment {
   public int sprintSneakFaults;
   public boolean acceptSneakFaults = true;
   public int ticksSneaking, ticksSprinting;
+  public int ticksSinceLastSneak;
   public float rotationYaw, rotationPitch;
   public float lastRotationYaw, lastRotationPitch;
   public long recordedMoves;
@@ -798,12 +799,12 @@ public final class MovementMetadata implements SimulationEnvironment {
   }
 
   @Override
-  public void setPreMoveColliderResult(ColliderResult result) {
+  public void setBeforeMoveColliderResult(ColliderResult result) {
     this.beforeMoveCollider = result;
   }
 
   @Override
-  public ColliderResult preMoveColliderResult() {
+  public ColliderResult beforeMoveColliderResult() {
     return beforeMoveCollider;
   }
 

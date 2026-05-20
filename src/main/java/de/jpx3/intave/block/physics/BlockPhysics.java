@@ -55,13 +55,13 @@ public final class BlockPhysics {
   }
 
   @Nullable
-  public static Motion entityInside(
+  public static Motion stepOn(
     User user,
     Material material,
     double motionX, double motionY, double motionZ
   ) {
     BlockPhysic collision = physicLookup(material);
-    return collision != null ? collision.entityInside(user, motionX, motionY, motionZ) : null;
+    return collision != null ? collision.stepOn(user, motionX, motionY, motionZ) : null;
   }
 
   @Nullable

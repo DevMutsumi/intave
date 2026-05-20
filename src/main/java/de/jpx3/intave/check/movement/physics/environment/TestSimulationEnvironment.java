@@ -483,12 +483,12 @@ public final class TestSimulationEnvironment implements SimulationEnvironment {
   }
 
   @Override
-  public void setPreMoveColliderResult(ColliderResult result) {
+  public void setBeforeMoveColliderResult(ColliderResult result) {
 
   }
 
   @Override
-  public ColliderResult preMoveColliderResult() {
+  public ColliderResult beforeMoveColliderResult() {
     return null;
   }
 

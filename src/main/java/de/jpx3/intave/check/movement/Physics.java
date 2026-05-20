@@ -47,6 +47,7 @@ import de.jpx3.intave.player.collider.simple.SimpleColliderResult;
 import de.jpx3.intave.share.BoundingBox;
 import de.jpx3.intave.share.Motion;
 import de.jpx3.intave.share.Position;
+import de.jpx3.intave.user.MessageChannel;
 import de.jpx3.intave.user.User;
 import de.jpx3.intave.user.UserRepository;
 import de.jpx3.intave.user.meta.*;
@@ -182,7 +183,7 @@ public final class Physics extends Check {
       movementData.pastEdgeSneak = 0;
     }
     if (clientData.newBlockEntityIntersectionLogic()) {
-      movementData.setPreMoveColliderResult(collider);
+      movementData.setBeforeMoveColliderResult(collider);
     }
 
     Timings.CHECK_PHYSICS_PROC_TOT.stop();
@@ -882,7 +883,7 @@ public final class Physics extends Check {
     boolean fullDebugRequested = DebugBroadcast.anyoneListeningTo(SIMFUL, player);
     boolean anyDebugRequested = !IntaveControl.DEBUG_MOVEMENT && (faultDebugRequested || fullDebugRequested);
 
-    if (IntaveControl.DEBUG_MOVEMENT || anyDebugRequested) {
+    if (IntaveControl.DEBUG_MOVEMENT || anyDebugRequested || user.receives(MessageChannel.DEBUG_MOVEMENT) ) {
       ChatColor chatColor = ChatColor.GRAY;
       String symbol = "";
 

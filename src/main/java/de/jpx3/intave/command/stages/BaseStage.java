@@ -199,7 +199,10 @@ public final class BaseStage extends CommandStage {
     POSITION(MessageChannel.DEBUG_POSITION),
     PACKET_HOLD(MessageChannel.DEBUG_PACKET_HOLD),
     COLLISIONS(MessageChannel.DEBUG_COLLISIONS),
-    HITBOXES(MessageChannel.DEBUG_HITBOXES)
+    HITBOXES(MessageChannel.DEBUG_HITBOXES),
+    MOVEMENT(MessageChannel.DEBUG_MOVEMENT),
+    PLAYER_ACTIONS(MessageChannel.DEBUG_PLAYER_ACTIONS),
+    ATTACK_RAYTRACE(MessageChannel.DEBUG_ATTACK_RAYTRACE),
 
     ;
 

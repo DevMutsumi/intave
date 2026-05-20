@@ -138,8 +138,8 @@ public interface SimulationEnvironment {
   void setPushedByEntity(boolean pushedByEntity);
   boolean pushedByEntity();
 
-  void setPreMoveColliderResult(ColliderResult result);
-  ColliderResult preMoveColliderResult();
+  void setBeforeMoveColliderResult(ColliderResult result);
+  ColliderResult beforeMoveColliderResult();
 
   int afterRespawnTicks();
   int pastAnyVelocity();
